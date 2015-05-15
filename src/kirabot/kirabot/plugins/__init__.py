@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from importlib import import_module
-
+import re
 
 from ..exceptions import ProgrammingException
 from ..communication import Communication
@@ -12,6 +12,8 @@ class PluginsManager(object):
     def __init__(self, app):
         self.app = app
         self.plugins = set()
+        self.communication = Communication(self.app)
+        self.communication.register_message_handler(self.message_handler)
 
     def run_plugin(self, name):
         if name in self.plugins:
@@ -25,9 +27,15 @@ class PluginsManager(object):
         if not issubclass(module.Plugin, BasePlugin):
             raise ProgrammingException(
                 'Plugin %s must be subclass of BasePlugin' % name)
-        plugin = module.Plugin(self)
-        plugin.run()
+        if module.Plugin.name is None:
+            raise ProgrammingException(
+                'Plugin %s must have specified name' % name)
+        plugin = module.Plugin(self.app, self)
         self.plugins.add(plugin)
+
+    def message_handler(self, message):
+        for plugin in self.plugins:
+            plugin.handle_message(message)
 
     def stop_plugin(self, name):
         if name not in self.plugins:
@@ -47,15 +55,33 @@ class BasePlugin(object):
 
     name = None
 
-    def __init__(self, manager):
-        if self.name is None:
-            ProgrammingException('Plugin must have specified name')
+    def __init__(self, app, manager):
+        self.app = app
         self.manager = manager
-        self.app = self.manager.app
-        self.communication = Communication(self.app)
 
     def handle_message(self, message):
         pass
 
-    def run(self):
-        self.communication.register_message_handler(self.handle_message)
+
+class CommandPlugin(BasePlugin):
+
+    def generate_regex(self, text):
+        return re.escape(text)
+
+    def handle_message(self, message):
+        for command_text, params in self.get_commands().iteritems():
+            command_list = command_text.split()
+            regex = r'^!{}$'.format(r' \s*'.join([
+                self.generate_regex(command_part)
+                for command_part in command_list]))
+            match = re.match(regex, message.text)
+            args = []
+            kwargs = {}
+            if match:
+                if 'response' in params:
+                    message.reply(params['response'])
+                if 'callback' in params:
+                    message.reply(params['callback'](*args, **kwargs))
+
+    def get_commands(self):
+        raise NotImplementedError()

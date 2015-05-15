@@ -6,7 +6,8 @@ setup(
     install_requires=[
         'Skype4Py',
         'ujson',
-        'requests'
+        'requests',
+        'beautifulsoup4'
     ],
     entry_points={
         'console_scripts': [
