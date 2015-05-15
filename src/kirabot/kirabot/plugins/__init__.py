@@ -11,7 +11,7 @@ class PluginsManager(object):
 
     def __init__(self, app):
         self.app = app
-        self.plugins = set()
+        self.plugins = {}
         self.communication = Communication(self.app)
         self.communication.register_message_handler(self.message_handler)
 
@@ -31,10 +31,10 @@ class PluginsManager(object):
             raise ProgrammingException(
                 'Plugin %s must have specified name' % name)
         plugin = module.Plugin(self.app, self)
-        self.plugins.add(plugin)
+        self.plugins[plugin.name] = plugin
 
     def message_handler(self, message):
-        for plugin in self.plugins:
+        for plugin in self.plugins.itervalues():
             plugin.handle_message(message)
 
     def stop_plugin(self, name):
@@ -43,7 +43,7 @@ class PluginsManager(object):
         raise NotImplementedError()
 
     def stop_all_plugins(self, name):
-        for plugin in self.plugins:
+        for plugin in self.plugins.itervalues():
             self.stop_plugin(plugin.name)
 
     def run_all_plugins(self):

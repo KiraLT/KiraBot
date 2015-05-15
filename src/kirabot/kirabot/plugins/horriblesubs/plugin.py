@@ -14,7 +14,7 @@ class Plugin(CommandPlugin):
     def get_commands(self):
         return {
             'horriblesubs new': {
-                'help': 'Play ping pong',
+                'help': 'Get new releases',
                 'callback': self.get_new
             }
         }

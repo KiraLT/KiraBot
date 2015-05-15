@@ -7,6 +7,7 @@ LOGGER_NAME = 'kirabot'
 LOG_LEVEL = 'DEBUG'
 CONSOLE_LOG_FORMAT = '[%(levelname)s]: %(message)s'
 PLUGINS = [
+    'help',
     'horriblesubs',
     'test',
     'ping'
