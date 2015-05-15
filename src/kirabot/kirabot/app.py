@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 
 
 from . import settings
-from .communication import Communication
+from .plugins import PluginsManager
 
 
 class App(object):
@@ -52,6 +52,6 @@ class App(object):
         self.logger = logger
 
     def run(self):
-        communication = Communication(self)
+        PluginsManager(self).run_all_plugins()
         while True:
             sleep(1)

@@ -13,3 +13,7 @@ class Communication(object):
             adapter_class.name: adapter_class(app)
             for adapter_class in self.adapter_classes
         }
+
+    def register_message_handler(self, handler):
+        for adapter in self.adapters.itervalues():
+            adapter.register_message_handler(handler)
