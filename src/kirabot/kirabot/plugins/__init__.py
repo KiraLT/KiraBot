@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from importlib import import_module
 import re
+from pydoc import locate
 
 from ..exceptions import ProgrammingException
 from ..communication import Communication
@@ -19,19 +20,15 @@ class PluginsManager(object):
         if name in self.plugins:
             raise ProgrammingException('Plugin %s already runnning' % name)
         try:
-            module = import_module('.%s.plugin' % name, __package__)
-            if not hasattr(module, 'Plugin'):
+            Plugin = locate(name)
+            if Plugin is None:
                 raise ImportError
         except ImportError:
             raise ProgrammingException('Plugin %s not found' % name)
-        if not issubclass(module.Plugin, BasePlugin):
+        if not issubclass(Plugin, BasePlugin):
             raise ProgrammingException(
                 'Plugin %s must be subclass of BasePlugin' % name)
-        if module.Plugin.name is None:
-            raise ProgrammingException(
-                'Plugin %s must have specified name' % name)
-        plugin = module.Plugin(self.app, self)
-        self.plugins[plugin.name] = plugin
+        self.plugins[name] = Plugin(self.app, self, name)
 
     def message_handler(self, message):
         for plugin in self.plugins.itervalues():
@@ -53,11 +50,10 @@ class PluginsManager(object):
 
 class BasePlugin(object):
 
-    name = None
-
-    def __init__(self, app, manager):
+    def __init__(self, app, manager, name):
         self.app = app
         self.manager = manager
+        self.name = name
 
     def handle_message(self, message):
         pass
@@ -66,22 +62,51 @@ class BasePlugin(object):
 class CommandPlugin(BasePlugin):
 
     def generate_regex(self, text):
+        if text.startswith('<') and text.endswith('>'):
+            re_type = text[1:-1]
+            if re_type[0] == '?':
+                optional = True
+                re_type = re_type[1:]
+            else:
+                optional = False
+            if ':' in re_type:
+                re_type, re_group = re_type.split(':', 2)
+            else:
+                re_group = None
+            re_map = {
+                'string': '[^ ]',
+                'text': '.',
+                'int': '[0-9]'
+            }
+            if re_type in re_map:
+                regex = re_map[re_type]
+                if optional:
+                    regex += '*'
+                else:
+                    regex += '+'
+                if re_group is not None:
+                    return '(?P<{}>{})'.format(re_group, regex)
+                return '({})'.format(regex)
+            else:
+                raise ProgrammingException('Unknow regex type %s' % re_type)
         return re.escape(text)
 
     def handle_message(self, message):
         for command_text, params in self.get_commands().iteritems():
             command_list = command_text.split()
-            regex = r'^!{}$'.format(r' \s*'.join([
+            regex = r'^\s*!{}\s*$'.format(r' \s*'.join([
                 self.generate_regex(command_part)
                 for command_part in command_list]))
-            match = re.match(regex, message.text)
-            args = []
-            kwargs = {}
+            match = re.match(regex, message.text + ' ')
             if match:
+                kwargs = match.groupdict()
+                response = None
                 if 'response' in params:
-                    message.reply(params['response'])
+                    response = params['response'].format(**kwargs)
                 if 'callback' in params:
-                    message.reply(params['callback'](*args, **kwargs))
+                    response = params['callback'](message, **kwargs)
+                if response is not None:
+                    message.reply(response)
 
     def get_commands(self):
         raise NotImplementedError()

@@ -5,7 +5,15 @@ from .. import CommandPlugin
 
 class Plugin(CommandPlugin):
 
-    name = 'help'
+    def format_command(self, command):
+        return 'help {}'.format(' '.join([
+            part
+            for part in command.split()
+            if not part.startswith('<') and not part.endswith('>')
+        ]))
+
+    def format_help_text(self, command, help_text):
+        return "Usage: !{}\n{}".format(command, help_text)
 
     def get_commands(self):
         commands = {}
@@ -16,12 +24,13 @@ class Plugin(CommandPlugin):
                 continue
             for command, params in plugin.get_commands().iteritems():
                 if 'help' in params:
-                    commands['help {}'.format(command)] = {
-                        'response': params['help']
+                    commands[self.format_command(command)] = {
+                        'response': self.format_help_text(
+                            command, params['help'])
                     }
         commands['help'] = {
-            'response': 'Help commands:\n' + '\n'.join([
+            'response': 'Help commands:\n' + '\n'.join(sorted([
                 '!{}'.format(command)
-                for command in commands.keys()])
+                for command in commands.keys()]))
         }
         return commands

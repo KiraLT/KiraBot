@@ -5,8 +5,6 @@ from .. import CommandPlugin
 
 class Plugin(CommandPlugin):
 
-    name = 'ping'
-
     def get_commands(self):
         return {
             'ping': {
