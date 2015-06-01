@@ -7,7 +7,8 @@ setup(
         'Skype4Py',
         'ujson',
         'requests',
-        'beautifulsoup4'
+        'beautifulsoup4',
+        'cleverbot'
     ],
     entry_points={
         'console_scripts': [
