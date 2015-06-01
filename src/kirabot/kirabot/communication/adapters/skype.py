@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
-from md5 import md5
-
 from Skype4Py import Skype, cmsReceived
 
+from kirabot.exceptions import ProgrammingException
+
 from ..message import Message
+from ..user import User
+from ..chat import Chat
 
 
 class SkypeAdapter(object):
@@ -25,9 +27,50 @@ class SkypeAdapter(object):
     def handle_message(self, skype_message, status):
         if status == cmsReceived:
             message = Message(
-                id=md5(unicode(skype_message._GetSender().Handle)).hexdigest(),
-                text=unicode(skype_message.Body),
-                name=unicode(skype_message._GetSender()._GetFullName())
+                sender=self.create_user(skype_message.Sender.Handle),
+                chat=self.create_chat(skype_message.Chat.Name),
+                text=unicode(skype_message.Body).strip()
             )
-            message.register_reply_handler(skype_message.Chat.SendMessage)
             self.message_hanlder(message)
+
+    def get_skype_chat(self, chat_id):
+        for skype_chat in self.skype.Chats:
+            if chat_id == skype_chat.Name:
+                return skype_chat
+        else:
+            raise ProgrammingException('Chat %s not found' % chat_id)
+
+    def get_skype_user(self, user_id):
+        for skype_user in self.skype.Friends:
+            if skype_user.Handle == user_id:
+                return skype_user
+        else:
+            raise ProgrammingException('User %s not found' % user_id)
+
+    def send_message(self, chat, text):
+        for skype_chat in self.skype.Chats:
+            if chat.id == skype_chat.Name:
+                skype_chat.SendMessage(text)
+                break
+        else:
+            raise ProgrammingException('Chat %s not found' % chat.id)
+
+    def create_chat_with(self, name):
+        skype_chat = self.skype.CreateChatWith(name)
+        return self.create_chat(skype_chat.Name)
+
+    def create_chat(self, chat_id):
+        skype_chat = self.get_skype_chat(chat_id)
+        return Chat(
+            id=unicode(skype_chat.Name),
+            name=unicode(skype_chat.FriendlyName),
+            adapter=self,
+            private=len(skype_chat.Members) == 2)
+
+    def create_user(self, user_id):
+        skype_user = self.get_skype_user(user_id)
+        return User(
+            id=unicode(skype_user.Handle),
+            name=unicode(skype_user.FullName),
+            adapter=self
+        )
