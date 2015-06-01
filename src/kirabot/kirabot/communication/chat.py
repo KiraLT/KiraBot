@@ -3,12 +3,14 @@ from __future__ import unicode_literals
 
 class Chat(object):
 
-    def __init__(self, id, name, adapter, private=False):
+    def __init__(self, app, id, name, adapter, private=False):
+        self.app = app
         self.id = id
         self.name = name
         self.private = private
         self.adapter = adapter
-        self.message_handler = None
+        self.storage = app.get_storage('communication:{}:chats:{}'.format(
+            self.adapter.name, self.id))
 
     def __unicode__(self):
         return '{} ({}, private={})'.format(

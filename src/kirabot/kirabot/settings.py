@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import os.path
+
 DEBUG = True
 
 BOT_NAME = 'KiraBot'
@@ -17,3 +19,6 @@ PLUGINS = [
 COMMUNICATION_ADAPTERS = [
     'kirabot.communication.adapters.skype.SkypeAdapter'
 ]
+STORAGE_FILE = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.dirname(__file__)))), 'var/kirabot/data.json')
+STORAGE = 'kirabot.storage.FileStorage'

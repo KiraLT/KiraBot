@@ -6,10 +6,11 @@ from logging import Formatter
 from logging import StreamHandler
 from logging.handlers import SysLogHandler
 from logging.handlers import RotatingFileHandler
-
+from pydoc import locate
 
 from . import settings
 from .plugins import PluginsManager
+from .exceptions import ConfigException
 
 
 class App(object):
@@ -20,6 +21,7 @@ class App(object):
         self.debug = None
         self.load_config()
         self.load_logger()
+        self.load_storage()
 
     def load_config(self):
         self.config = {}
@@ -51,7 +53,20 @@ class App(object):
             logger.addHandler(file_handler)
         self.logger = logger
 
+    def load_storage(self):
+        Storage = locate(self.config['STORAGE'])
+        if Storage is None:
+            raise ConfigException(
+                'Storage %s not found' % self.confog['STORAGE'])
+        self.storage = Storage(self)
+
     def run(self):
         PluginsManager(self).run_all_plugins()
         while True:
-            sleep(1)
+            sleep(5)
+            self.storage.save()
+
+    def get_storage(self, name):
+        if name not in self.storage.data:
+            self.storage.data[name] = {}
+        return self.storage.data[name]

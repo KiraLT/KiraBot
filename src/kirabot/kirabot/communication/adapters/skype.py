@@ -27,6 +27,7 @@ class SkypeAdapter(object):
     def handle_message(self, skype_message, status):
         if status == cmsReceived:
             message = Message(
+                app=self.app,
                 sender=self.create_user(skype_message.Sender.Handle),
                 chat=self.create_chat(skype_message.Chat.Name),
                 text=unicode(skype_message.Body).strip()
@@ -62,6 +63,7 @@ class SkypeAdapter(object):
     def create_chat(self, chat_id):
         skype_chat = self.get_skype_chat(chat_id)
         return Chat(
+            app=self.app,
             id=unicode(skype_chat.Name),
             name=unicode(skype_chat.FriendlyName),
             adapter=self,
@@ -70,6 +72,7 @@ class SkypeAdapter(object):
     def create_user(self, user_id):
         skype_user = self.get_skype_user(user_id)
         return User(
+            app=self.app,
             id=unicode(skype_user.Handle),
             name=unicode(skype_user.FullName),
             adapter=self
