@@ -60,6 +60,7 @@ class BasePlugin(object):
         self.manager = manager
         self.name = name
         self.executor = ThreadPoolExecutor(max_workers=self.max_workers)
+        self.storage = self.app.get_storage('plugins:{}'.format(self.name))
 
     def handle_message(self, message):
         return False
@@ -111,7 +112,10 @@ class CommandPlugin(BasePlugin):
                 for command_part in command_list]))
             match = re.match(regex, message.text + ' ')
             if match:
-                kwargs = match.groupdict()
+                kwargs = {
+                    k.strip(): val.strip()
+                    for k, val in match.groupdict().iteritems()
+                }
                 response = None
                 if 'response' in params:
                     response = params['response'].format(**kwargs)

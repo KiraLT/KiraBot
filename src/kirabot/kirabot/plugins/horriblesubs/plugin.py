@@ -33,21 +33,47 @@ class Plugin(CommandPlugin):
 
     def background(self):
         while True:
-            print 'Working'
-            sleep(1)
+            if 'anime' not in self.storage:
+                self.storage['anime'] = []
+            try:
+                content = self.make_request('lib/latest.php')
+            except RequestException as e:
+                self.app.exceptions(e)
+            for data in self.parse_list(content):
+                if data['anime'] not in self.storage['anime']:
+                    self.storage['anime'].append(data['anime'])
+            sleep(60)
 
-    def parse_list(self, content, limit):
-        response = ''
+    def parse_list(self, content):
+        results = []
         soup = BeautifulSoup(content)
-        for episode in soup.findAll('div', class_='episode')[:limit]:
+        for episode in soup.findAll('div', class_='episode'):
             name = ' '.join(episode.contents[0].strip().split(' ')[1:])
-            response += '* {}\n'.format(name)
+            resolutions = []
             for res_div in episode.findAll(class_='resolution-block'):
                 if not res_div.find('a'):
                     continue
                 resolution = res_div.find('a').text.strip()
                 torrent_link = res_div.find('a', text='Torrent').get('href')
-                response += '  [{}] {}\n'.format(resolution, torrent_link)
+                resolutions.append({
+                    'resolution': resolution,
+                    'torrent': torrent_link
+                })
+            results.append({
+                'anime': '-'.join(name.split('-')[:-1]).strip(),
+                'episode': name.split('-')[-1].strip(),
+                'resolutions': resolutions
+            })
+        return results
+
+    def parse_list_response(self, content, limit):
+        response = ''
+        for data in self.parse_list(content)[:limit]:
+            response += '* {} - {}\n'.format(data['anime'], data['episode'])
+            for resolution in data['resolutions']:
+                response += '  [{}] {}\n'.format(
+                    resolution['resolution'],
+                    resolution['torrent'])
         if not response:
             response = 'Can\' find what your are looking for :('
         return response
@@ -69,7 +95,7 @@ class Plugin(CommandPlugin):
         except RequestException as e:
             return unicode(e)
         response = 'Latest releases:\n'
-        response += self.parse_list(content, 5)
+        response += self.parse_list_response(content, 5)
         return response
 
     def search(self, message, query):
@@ -78,10 +104,18 @@ class Plugin(CommandPlugin):
         except RequestException as e:
             return unicode(e)
         response = 'Releases for {}:\n'.format(query)
-        response += self.parse_list(content, 5)
+        response += self.parse_list_response(content, 5)
         return response
 
     def subscribe(self, message, name):
+        print name, self.storage['anime']
+        if name not in self.storage['anime']:
+            if self.name not in message.sender.storage:
+                message.sender.storage[self.name] = {
+                    'subscibe': []
+                }
+            message.sender.storage[self.name]['subscibe'].append(name)
+            return 'This anime is not supported'
         return 'You successfully subscribed to {}'.format(name)
 
     def unsubscribe(self, message, name):
