@@ -8,7 +8,7 @@ from .. import BasePlugin
 class Plugin(BasePlugin):
 
     def handle_message(self, message):
-        if message.text.startswith('!test'):
+        if message.text.lower().startswith('!test'):
             if 'last_check' not in message.sender.storage:
                 message.sender.storage['last_check'] = int(time())
             message.reply("""

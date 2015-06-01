@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import re
 from pydoc import locate
 
+from concurrent.futures import ThreadPoolExecutor
 from ..exceptions import ProgrammingException, ConfigException
 from ..communication import Communication
 
@@ -27,7 +28,9 @@ class PluginsManager(object):
         if not issubclass(Plugin, BasePlugin):
             raise ProgrammingException(
                 'Plugin %s must be subclass of BasePlugin' % name)
-        self.plugins[name] = Plugin(self.app, self, name)
+        plugin = Plugin(self.app, self, name)
+        plugin.run()
+        self.plugins[name] = plugin
 
     def message_handler(self, message):
         for plugin in self.plugins.itervalues():
@@ -50,12 +53,21 @@ class PluginsManager(object):
 
 class BasePlugin(object):
 
+    max_workers = 1
+
     def __init__(self, app, manager, name):
         self.app = app
         self.manager = manager
         self.name = name
+        self.executor = ThreadPoolExecutor(max_workers=self.max_workers)
 
     def handle_message(self, message):
+        return False
+
+    def run(self):
+        self.executor.submit(self.background)
+
+    def background(self):
         return False
 
 

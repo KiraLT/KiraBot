@@ -5,6 +5,15 @@ import os.path
 import ujson
 
 
+class StorageObject(object):
+
+    def serialize(self):
+        raise NotImplementedError()
+
+    def unserialize(self):
+        raise NotImplementedError()
+
+
 class Storage(object):
 
     def __init__(self, app):
@@ -17,6 +26,9 @@ class Storage(object):
 
     def save(self):
         raise NotImplementedError()
+
+    def serialize(self, data):
+        return data
 
 
 class FileStorage(Storage):

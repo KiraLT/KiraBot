@@ -7,6 +7,7 @@ setup(
         'Skype4Py',
         'ujson',
         'requests',
+        'requests-futures',
         'beautifulsoup4',
         'cleverbot'
     ],

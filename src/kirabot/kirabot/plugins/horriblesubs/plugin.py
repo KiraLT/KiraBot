@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import requests
 from requests.exceptions import RequestException
+from time import sleep
+
 from bs4 import BeautifulSoup
 
 from .. import CommandPlugin
@@ -18,8 +20,21 @@ class Plugin(CommandPlugin):
             'hs find <text:query>': {
                 'help': 'Search for anime releases',
                 'callback': self.search
+            },
+            'hs subscribe <text:name>': {
+                'help': 'Subscibe for notifications of new releases',
+                'callback': self.subscribe
+            },
+            'hs unsubscribe <text:name>': {
+                'help': 'Unsubscibe for notifications of new releases',
+                'callback': self.unsubscribe
             }
         }
+
+    def background(self):
+        while True:
+            print 'Working'
+            sleep(1)
 
     def parse_list(self, content, limit):
         response = ''
@@ -65,3 +80,9 @@ class Plugin(CommandPlugin):
         response = 'Releases for {}:\n'.format(query)
         response += self.parse_list(content, 5)
         return response
+
+    def subscribe(self, message, name):
+        return 'You successfully subscribed to {}'.format(name)
+
+    def unsubscribe(self, message, name):
+        return 'You unsuccessfully subscribed to {}'.format(name)
