@@ -1,5 +1,9 @@
 from __future__ import unicode_literals
 
+from pydoc import locate
+
+from kirabot.exceptions import ConfigException
+
 from .adapters.skype import SkypeAdapter
 
 
@@ -9,10 +13,12 @@ class Communication(object):
 
     def __init__(self, app):
         self.app = app
-        self.adapters = {
-            adapter_class.name: adapter_class(app)
-            for adapter_class in self.adapter_classes
-        }
+        self.adapters = {}
+        for adapter_string in app.config['COMMUNICATION_ADAPTERS']:
+            Adapter = locate(adapter_string)
+            if Adapter is None:
+                raise ConfigException('Adapter %s not found' % adapter_string)
+            self.adapters[Adapter.name] = Adapter(self.app)
 
     def register_message_handler(self, handler):
         for adapter in self.adapters.itervalues():

@@ -1,10 +1,9 @@
 from __future__ import unicode_literals
 
-from importlib import import_module
 import re
 from pydoc import locate
 
-from ..exceptions import ProgrammingException
+from ..exceptions import ProgrammingException, ConfigException
 from ..communication import Communication
 
 
@@ -24,7 +23,7 @@ class PluginsManager(object):
             if Plugin is None:
                 raise ImportError
         except ImportError:
-            raise ProgrammingException('Plugin %s not found' % name)
+            raise ConfigException('Plugin %s not found' % name)
         if not issubclass(Plugin, BasePlugin):
             raise ProgrammingException(
                 'Plugin %s must be subclass of BasePlugin' % name)
@@ -32,7 +31,8 @@ class PluginsManager(object):
 
     def message_handler(self, message):
         for plugin in self.plugins.itervalues():
-            plugin.handle_message(message)
+            if plugin.handle_message(message):
+                break
 
     def stop_plugin(self, name):
         if name not in self.plugins:
@@ -56,7 +56,7 @@ class BasePlugin(object):
         self.name = name
 
     def handle_message(self, message):
-        pass
+        return False
 
 
 class CommandPlugin(BasePlugin):
@@ -107,6 +107,7 @@ class CommandPlugin(BasePlugin):
                     response = params['callback'](message, **kwargs)
                 if response is not None:
                     message.reply(response)
+                    return True
 
     def get_commands(self):
         raise NotImplementedError()

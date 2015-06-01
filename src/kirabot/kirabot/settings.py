@@ -12,4 +12,8 @@ PLUGINS = [
     'kirabot.plugins.horriblesubs.plugin.Plugin',
     'kirabot.plugins.ping.plugin.Plugin',
     'kirabot.plugins.cleverbot.plugin.Plugin',
+    'kirabot.plugins.unknown.plugin.Plugin',
+]
+COMMUNICATION_ADAPTERS = [
+    'kirabot.communication.adapters.skype.SkypeAdapter'
 ]

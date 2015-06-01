@@ -11,7 +11,7 @@ class Plugin(CommandPlugin):
 
     def get_commands(self):
         return {
-            'hs new <?int:limit>': {
+            'hs new': {
                 'help': 'Get new releases',
                 'callback': self.new
             },
@@ -28,6 +28,8 @@ class Plugin(CommandPlugin):
             name = ' '.join(episode.contents[0].strip().split(' ')[1:])
             response += '* {}\n'.format(name)
             for res_div in episode.findAll(class_='resolution-block'):
+                if not res_div.find('a'):
+                    continue
                 resolution = res_div.find('a').text.strip()
                 torrent_link = res_div.find('a', text='Torrent').get('href')
                 response += '  [{}] {}\n'.format(resolution, torrent_link)
@@ -46,24 +48,20 @@ class Plugin(CommandPlugin):
             raise RequestException('Busy at the moment, go back later')
         return r.content
 
-    def new(self, message, limit):
-        if not limit:
-            limit = 5
+    def new(self, message):
         try:
             content = self.make_request('lib/latest.php')
         except RequestException as e:
             return unicode(e)
         response = 'Latest releases:\n'
-        response += self.parse_list(content, int(limit))
+        response += self.parse_list(content, 5)
         return response
 
-    def search(self, message, query, limit):
-        if not limit:
-            limit = 5
+    def search(self, message, query):
         try:
             content = self.make_request('lib/search.php', value=query)
         except RequestException as e:
             return unicode(e)
         response = 'Releases for {}:\n'.format(query)
-        response += self.parse_list(content, int(limit))
+        response += self.parse_list(content, 5)
         return response
