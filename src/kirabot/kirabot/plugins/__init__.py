@@ -62,6 +62,10 @@ class BasePlugin(object):
         self.name = name
         self.executor = ThreadPoolExecutor(max_workers=self.max_workers)
         self.storage = self.app.get_storage('plugins:{}'.format(self.name))
+        self.init()
+
+    def init(self):
+        pass
 
     def handle_message(self, message):
         return False

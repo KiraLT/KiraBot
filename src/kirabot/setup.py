@@ -9,7 +9,7 @@ setup(
         'requests',
         'requests-futures',
         'beautifulsoup4',
-        'cleverbot'
+        'cleverbot',
     ],
     entry_points={
         'console_scripts': [
