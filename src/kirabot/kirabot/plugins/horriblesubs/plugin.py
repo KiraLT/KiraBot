@@ -108,7 +108,6 @@ class Plugin(CommandPlugin):
         return response
 
     def subscribe(self, message, name):
-        print name, self.storage['anime']
         if name not in self.storage['anime']:
             if self.name not in message.sender.storage:
                 message.sender.storage[self.name] = {

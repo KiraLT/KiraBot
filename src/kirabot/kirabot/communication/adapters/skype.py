@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from Skype4Py import Skype, cmsReceived
+from concurrent.futures import ThreadPoolExecutor
 
 from kirabot.exceptions import ProgrammingException
 
@@ -19,6 +20,11 @@ class SkypeAdapter(object):
         self.skype.FriendlyName = self.app.config['BOT_NAME']
         self.skype.Attach()
         self.message_hanlder = None
+        self.executor = ThreadPoolExecutor(max_workers=10)
+        self.app.logger.debug('Skype adapter loaded')
+        self.app.logger.debug(
+            'Skype name: %s (%s)', self.skype.CurrentUser.FullName,
+            self.skype.CurrentUser.Handle)
 
     def register_message_handler(self, handler):
         self.message_hanlder = handler
@@ -32,7 +38,9 @@ class SkypeAdapter(object):
                 chat=self.create_chat(skype_message.Chat.Name),
                 text=unicode(skype_message.Body).strip()
             )
-            self.message_hanlder(message)
+            self.app.logger.info('From {}: {}'.format(
+                message.chat.name, message.text))
+            self.executor.submit(self.message_hanlder, message)
 
     def get_skype_chat(self, chat_id):
         for skype_chat in self.skype.Chats:
@@ -51,6 +59,7 @@ class SkypeAdapter(object):
     def send_message(self, chat, text):
         for skype_chat in self.skype.Chats:
             if chat.id == skype_chat.Name:
+                self.app.logger.info('To {}: {}'.format(chat.name, text))
                 skype_chat.SendMessage(text)
                 break
         else:
